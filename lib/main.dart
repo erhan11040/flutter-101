@@ -1,7 +1,11 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:english_words/english_words.dart';
+import 'package:firebase_core/firebase_core.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
   runApp(MyApp());
 }
 
@@ -95,8 +99,48 @@ class _RandomWordsState extends State<RandomWords> {
         color: alreadySaved ? Colors.red : null,
       ),
       onTap: () {
-        setState(() => {alreadySaved ? _saved.remove(pair) : _saved.add(pair)});
+        setState(() => {
+              alreadySaved ? _deleteFromFireStore(pair) : _saveToFireStore(pair)
+            });
       },
+    );
+  }
+
+  void _saveToFireStore(WordPair pair) {
+    _saved.add(pair);
+    FirebaseFirestore.instance.collection('testText').add({
+      'title': pair.asLowerCase,
+    }).then((value) => {
+          _showToast(context, pair.asLowerCase + " is added to your favorites")
+        });
+  }
+
+  void _deleteFromFireStore(WordPair pair) {
+    _saved.remove(pair);
+    FirebaseFirestore.instance
+        .collection('testText')
+        .where('title', isEqualTo: pair.asLowerCase)
+        .get()
+        .then((QuerySnapshot querySnapshot) {
+      if (querySnapshot.docs.length > 0) {
+        var id = querySnapshot.docs.first.id;
+        FirebaseFirestore.instance.collection('testText').doc(id).delete().then(
+            (value) => {
+                  _showToast(context,
+                      pair.asLowerCase + " is removed from your favorites")
+                });
+      }
+    });
+  }
+
+  void _showToast(BuildContext context, String text) {
+    final scaffold = ScaffoldMessenger.of(context);
+    scaffold.showSnackBar(
+      SnackBar(
+        content: Text(text),
+        action: SnackBarAction(
+            label: 'UNDO', onPressed: scaffold.hideCurrentSnackBar),
+      ),
     );
   }
 }

@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:english_words/english_words.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -33,6 +36,14 @@ class _RandomWordsState extends State<RandomWords> {
   final _suggestions = <WordPair>[];
   final _biggerFont = const TextStyle(fontSize: 18.0);
   final _saved = <WordPair>{};
+  @override
+  void initState() {
+    String host = Platform.isAndroid ? '10.0.2.2:8080' : 'localhost:8080';
+
+    FirebaseFirestore.instance.settings =
+        Settings(host: host, sslEnabled: false, persistenceEnabled: false);
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
